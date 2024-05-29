@@ -1,0 +1,950 @@
+import pandas as pd
+import numpy as np
+
+
+# load data in dataframe and prepare it
+def prepare_data():
+    df = pd.read_stata('evs_trend.dta', convert_categoricals=False)
+    df = evs_2017(df)
+    df = age(df)
+    df = confounders(df)
+    df = sys_jus(df)
+    df = prog_cons_score(df)
+    df = fulfillment_score(df)
+    df = fulfillment(df)
+    df = fulfillment_abs(df)
+    df = fulfillment_z(df)
+    df = fulfillment_z_abs(df)
+    df = sexism(df)
+    df = sys_jus_z(df)
+    df = sys_jus_z_abs(df)
+    return df
+
+
+# preparation of potential confounding variables
+def confounders(df):
+    df = satisfaction(df)
+    df = social_class(df)
+    return df
+
+
+def evs_2017(df):
+    # only evs 2017
+    df = df[df.s002vs == 7]
+    return df
+
+
+# economy vs. environment
+def econ_env(df):
+    # create variable economy vs environment econ_env
+    df['econ_env'] = df['B008']
+    # remove missing for environment vs. economy & other
+    df = df[df.econ_env != -5]
+    df = df[df.econ_env != -4]
+    df = df[df.econ_env != -3]
+    df = df[df.econ_env != -2]
+    df = df[df.econ_env != -1]
+    df = df[df.econ_env != 3]
+    # recode econ_env
+    # Environment = 0
+    # Economy = 9
+    df['econ_env'] = df['econ_env'].replace([1], 0)
+    df['econ_env'] = df['econ_env'].replace([2], 9)
+    return df
+
+
+# income inequality
+def inc_ineq(df):
+    df['inc_ineq'] = df['E035']
+    # remove missing
+    df = df[df.inc_ineq != -5]
+    df = df[df.inc_ineq != -4]
+    df = df[df.inc_ineq != -3]
+    df = df[df.inc_ineq != -2]
+    df = df[df.inc_ineq != -1]
+    # recode
+    # all values -1
+    df['inc_ineq'] = df['inc_ineq'].replace([1], 0)
+    df['inc_ineq'] = df['inc_ineq'].replace([2], 1)
+    df['inc_ineq'] = df['inc_ineq'].replace([3], 2)
+    df['inc_ineq'] = df['inc_ineq'].replace([4], 3)
+    df['inc_ineq'] = df['inc_ineq'].replace([5], 4)
+    df['inc_ineq'] = df['inc_ineq'].replace([6], 5)
+    df['inc_ineq'] = df['inc_ineq'].replace([7], 6)
+    df['inc_ineq'] = df['inc_ineq'].replace([8], 7)
+    df['inc_ineq'] = df['inc_ineq'].replace([9], 8)
+    df['inc_ineq'] = df['inc_ineq'].replace([10], 9)
+    return df
+
+
+# how important to have [respondent's] ancestry
+def imp_ancestry(df):
+    df['imp_ancestry'] = df['G035']
+    # remove missing
+    df = df[df.imp_ancestry != -5]
+    df = df[df.imp_ancestry != -4]
+    df = df[df.imp_ancestry != -3]
+    df = df[df.imp_ancestry != -2]
+    df = df[df.imp_ancestry != -1]
+    # 0 = not important at all
+    # 3 = not important
+    # 6 = quite important
+    # 9 = very important
+    df['imp_ancestry'] = df['imp_ancestry'].replace([4], 0)
+    df['imp_ancestry'] = df['imp_ancestry'].replace([2], 6)
+    df['imp_ancestry'] = df['imp_ancestry'].replace([1], 9)
+    return df
+
+
+# how important to respect [respondent's] country's political institutions and laws
+def respect_inst_laws(df):
+    df['respect_inst_laws'] = df['G034']
+    # remove missing
+    df = df[df.respect_inst_laws != -5]
+    df = df[df.respect_inst_laws != -4]
+    df = df[df.respect_inst_laws != -3]
+    df = df[df.respect_inst_laws != -2]
+    df = df[df.respect_inst_laws != -1]
+    # 0 = not important at all
+    # 3 = not important
+    # 6 = quite important
+    # 9 = very important
+    df['respect_inst_laws'] = df['respect_inst_laws'].replace([4], 0)
+    df['respect_inst_laws'] = df['respect_inst_laws'].replace([2], 6)
+    df['respect_inst_laws'] = df['respect_inst_laws'].replace([1], 9)
+    return df
+
+
+# work is a duty towards society
+def duty_work(df):
+    df['duty_work'] = df['C039']
+    # remove missing
+    df = df[df.duty_work != -5]
+    df = df[df.duty_work != -4]
+    df = df[df.duty_work != -3]
+    df = df[df.duty_work != -2]
+    df = df[df.duty_work != -1]
+    # recode
+    # 0 = strongly disagree
+    # 2.25 = disagree
+    # 4.5 = neither agree nor disagree
+    # 6.75 = agree
+    # 9 = strongly agree
+    df['duty_work'] = df['duty_work'].replace([5], 0)
+    df['duty_work'] = df['duty_work'].replace([4], 2.25)
+    df['duty_work'] = df['duty_work'].replace([3], 4.5)
+    df['duty_work'] = df['duty_work'].replace([2], 6.75)
+    df['duty_work'] = df['duty_work'].replace([1], 9)
+    return df
+
+
+# social class
+# 1 = upper class
+# 2 = middle class
+# 3 = lower class
+def social_class(df):
+    df['social_class'] = df['X036C']
+    # remove missing
+    df = df[df.social_class != -5]
+    df = df[df.social_class != -4]
+    # df = df[df.social_class != -3]
+    df = df[df.social_class != -2]
+    df = df[df.social_class != -1]
+    # recode
+    # 1 = upper class: higher controllers (1), self-employed with employees (5), self-employed farmer (11)
+    # 2 = middle class: lower controllers (2), routine non manual (3), lower sales-service (4),
+    # self employed with no employees (6), manual supervisors (7), skilled worker (8)
+    # 3 = lower class: unemployed (-3), unskilled worker (9), farm labor (10)
+    df['social_class'] = df['social_class'].replace([1, 5, 11], 1)
+    df['social_class'] = df['social_class'].replace([2, 3, 4, 6, 7, 8], 2)
+    df['social_class'] = df['social_class'].replace([-3, 9, 10], 3)
+    return df
+
+
+# positioning on left right scale
+# 0 = left
+# 9 = right
+def left_right(df):
+    df['left_right'] = df['E033']
+    # remove missing
+    df = df[df.left_right != -5]
+    df = df[df.left_right != -4]
+    df = df[df.left_right != -3]
+    df = df[df.left_right != -2]
+    df = df[df.left_right != -1]
+    # recode
+    i = 1
+    while i <= 10:
+        df['left_right'] = df['left_right'].replace([i], i - 1)
+        i = i + 1
+    return df
+
+
+# people who don't work turn lazy
+def no_work_lazy(df):
+    df['no_work_lazy'] = df['C038']
+    # remove missing
+    df = df[df.no_work_lazy != -5]
+    df = df[df.no_work_lazy != -4]
+    df = df[df.no_work_lazy != -3]
+    df = df[df.no_work_lazy != -2]
+    df = df[df.no_work_lazy != -1]
+    # recode
+    # 0 = strongly disagree
+    # 2.25 = disagree
+    # 4.5 = neither agree nor disagree
+    # 6.75 = agree
+    # 9 = strongly agree
+    df['no_work_lazy'] = df['no_work_lazy'].replace([5], 0)
+    df['no_work_lazy'] = df['no_work_lazy'].replace([4], 2.25)
+    df['no_work_lazy'] = df['no_work_lazy'].replace([3], 4.5)
+    df['no_work_lazy'] = df['no_work_lazy'].replace([2], 6.75)
+    df['no_work_lazy'] = df['no_work_lazy'].replace([1], 9)
+    return df
+
+
+# when jobs are scarce, men have more right to a job than women
+def men_right_job(df):
+    df['men_right_job'] = df['C001_01']
+    # remove missing
+    df = df[df.men_right_job != -5]
+    df = df[df.men_right_job != -4]
+    df = df[df.men_right_job != -3]
+    df = df[df.men_right_job != -2]
+    df = df[df.men_right_job != -1]
+    # recode
+    # 0 = strongly disagree
+    # 2.25 = disagree
+    # 4.5 = neither agree nor disagree
+    # 6.75 = agree
+    # 9 = strongly agree
+    df['men_right_job'] = df['men_right_job'].replace([5], 0)
+    df['men_right_job'] = df['men_right_job'].replace([4], 2.25)
+    df['men_right_job'] = df['men_right_job'].replace([3], 4.5)
+    df['men_right_job'] = df['men_right_job'].replace([2], 6.75)
+    df['men_right_job'] = df['men_right_job'].replace([1], 9)
+    return df
+
+
+# system justification
+def sys_jus(df):
+    df = econ_env(df)
+    df = inc_ineq(df)
+    df = imp_ancestry(df)
+    df = respect_inst_laws(df)
+    df = no_work_lazy(df)
+    df = left_right(df)
+    df = duty_work(df)
+    df = men_right_job(df)
+    df['sys_jus'] = (df['econ_env'] +
+                     df['inc_ineq'] +
+                     df['imp_ancestry'] +
+                     df['respect_inst_laws'] +
+                     df['no_work_lazy'] +
+                     df['left_right'] +
+                     df['duty_work'] +
+                     df['men_right_job']) / 8
+    return df
+
+
+# deviation from mean sys_jus
+def sys_jus_dev(df):
+    mean_sys_jus = df['sys_jus'].mean()
+    df['sys_jus_dev'] = -1 * (mean_sys_jus - df['sys_jus'])
+    return df
+
+
+# z-standardization of sys_jus
+def sys_jus_z(df):
+    df['sys_jus_z'] = (df['sys_jus'] - df['sys_jus'].mean()) / df['sys_jus'].std()
+    return df
+
+
+# absolute value of z-standardized system jsutification value
+def sys_jus_z_abs(df):
+    df['sys_jus_z_abs'] = abs(df['sys_jus_z'])
+    return df
+
+
+# assign progressive/conservative category
+# very progressive (score <= -75)
+# progressive ( -50 <= score < -75)
+# slightly progressive (-25 <= score < -50)
+# moderate (-25 < score < 25)
+# slightly conservative (25 <= score < 50)
+# conservative (50 <= score < 75)
+# very conservative (score >= 75)
+def assign_prog_con(df):
+    pc_list = list()
+    for index, row in df.iterrows():
+        if row['prog_cons_score'] <= -75:
+            pc_list.append('very progressive')
+        elif -50 >= row['prog_cons_score'] > -75:
+            pc_list.append('progressive')
+        elif -25 >= row['prog_cons_score'] > -50:
+            pc_list.append('slightly progressive')
+        elif -25 < row['prog_cons_score'] < 25:
+            pc_list.append('moderate')
+        elif 25 <= row['prog_cons_score'] < 50:
+            pc_list.append('slightly conservative')
+        elif 50 <= row['prog_cons_score'] < 75:
+            pc_list.append('conservative')
+        elif row['prog_cons_score'] >= 75:
+            pc_list.append('very conservative')
+        else:
+            print(row['prog_cons_score'])
+            pc_list.append('elel')
+    df['prog_con'] = pc_list
+    return df
+
+
+# satisfaction with life
+def satisfaction(df):
+    df['satisfaction'] = df['A170']
+    # remove missing
+    df = df[df.satisfaction != -5]
+    df = df[df.satisfaction != -4]
+    df = df[df.satisfaction != -3]
+    df = df[df.satisfaction != -2]
+    df = df[df.satisfaction != -1]
+    return df
+
+
+# keep only if 18 or older
+def age(df):
+    df['age'] = df['X003']
+    # remove missing
+    df = df[df.age != -5]
+    df = df[df.age != -4]
+    df = df[df.age != -3]
+    df = df[df.age != -2]
+    df = df[df.age != -1]
+    # remove age <= 18
+    df = df[df.age >= 18]
+    return df
+
+
+# women want home and child
+def wom_hom_child(df):
+    df['wom_hom_child'] = df['D062']
+    # remove missing
+    df = df[df.wom_hom_child != -5]
+    df = df[df.wom_hom_child != -4]
+    df = df[df.wom_hom_child != -3]
+    df = df[df.wom_hom_child != -2]
+    df = df[df.wom_hom_child != -1]
+    # recode
+    # -1 = strongly disagree
+    # -0.5 = disagree
+    # 0.5 = agree
+    # 1 = strongly agree
+    df['wom_hom_child'] = df['wom_hom_child'].replace([4], -1)
+    df['wom_hom_child'] = df['wom_hom_child'].replace([2], 0.5)
+    df['wom_hom_child'] = df['wom_hom_child'].replace([3], -0.5)
+    return df
+
+
+# female
+def female(df):
+    df['female'] = df['X001']
+    # remove missing
+    df = df[df.female != -5]
+    df = df[df.female != -4]
+    df = df[df.female != -3]
+    df = df[df.female != -2]
+    df = df[df.female != -1]
+    # recode
+    # 0 = male
+    # 1 = female
+    df['female'] = df['female'].replace([1], 0)
+    df['female'] = df['female'].replace([2], 1)
+    return df
+
+
+# pre-school child suffers from working mother
+def child_suffers(df):
+    df['child_suffers'] = df['D061']
+    # remove missing
+    df = df[df.child_suffers != -5]
+    df = df[df.child_suffers != -4]
+    df = df[df.child_suffers != -3]
+    df = df[df.child_suffers != -2]
+    df = df[df.child_suffers != -1]
+    # recode
+    # -1 = strongly disagree
+    # -0.5 = disagree
+    # 0.5 = agree
+    # 1 = strongly agree
+    df['child_suffers'] = df['child_suffers'].replace([4], -1)
+    df['child_suffers'] = df['child_suffers'].replace([3], -0.5)
+    df['child_suffers'] = df['child_suffers'].replace([2], 0.5)
+    return df
+
+
+# it is a duty towards society to have children
+def duty_children(df):
+    df['duty_children'] = df['D026_03']
+    # remove missing
+    df = df[df.duty_children != -5]
+    df = df[df.duty_children != -4]
+    df = df[df.duty_children != -3]
+    df = df[df.duty_children != -2]
+    df = df[df.duty_children != -1]
+    # recode
+    # -1 = strongly disagree
+    # -0.5 = disagree
+    # 0 = agree nor disagree
+    # 0.5 = agree
+    # 1 = strongly agree
+    df['duty_children'] = df['duty_children'].replace([5], -1)
+    df['duty_children'] = df['duty_children'].replace([4], -0.5)
+    df['duty_children'] = df['duty_children'].replace([3], 0)
+    df['duty_children'] = df['duty_children'].replace([2], 0.5)
+    return df
+
+
+# marriage is an outdated institution
+def marry_outdated(df):
+    df['marry_outdated'] = df['D022']
+    # remove missing
+    # keep don't know (-1)
+    df = df[df.marry_outdated != -5]
+    df = df[df.marry_outdated != -4]
+    df = df[df.marry_outdated != -3]
+    df = df[df.marry_outdated != -2]
+    # recode
+    # agree = -1
+    # don't know = 0
+    # disagree = 1
+    df['marry_outdated'] = df['marry_outdated'].replace([1], 10)
+    df['marry_outdated'] = df['marry_outdated'].replace([0], 1)
+    df['marry_outdated'] = df['marry_outdated'].replace([-1], 0)
+    df['marry_outdated'] = df['marry_outdated'].replace([10], -1)
+    return df
+
+
+# importance of children for marriage
+def imp_marry_child(df):
+    df['imp_marry_child'] = df['D038']
+    # remove missing
+    df = df[df.imp_marry_child != -5]
+    df = df[df.imp_marry_child != -4]
+    df = df[df.imp_marry_child != -3]
+    df = df[df.imp_marry_child != -2]
+    df = df[df.imp_marry_child != -1]
+    # recode
+    # not very important = -1
+    # rather important = 0
+    # very important = 1
+    df['imp_marry_child'] = df['imp_marry_child'].replace([2], 0)
+    df['imp_marry_child'] = df['imp_marry_child'].replace([3], -1)
+    return df
+
+
+# how important is work in life
+def imp_work(df):
+    df['imp_work'] = df['A005']
+    # remove missing
+    df = df[df.imp_work != -5]
+    df = df[df.imp_work != -4]
+    df = df[df.imp_work != -3]
+    df = df[df.imp_work != -2]
+    df = df[df.imp_work != -1]
+    # recode
+    # not at all important = -1
+    # not very important = -0.5
+    # rather important = 0.5
+    # very important = 1
+    df['imp_work'] = df['imp_work'].replace([4], -1)
+    df['imp_work'] = df['imp_work'].replace([3], -0.5)
+    df['imp_work'] = df['imp_work'].replace([2], 0.5)
+    return df
+
+
+# decrease of importance placed on work in life
+def dec_work(df):
+    df['dec_work'] = df['E015']
+    # remove missing
+    df = df[df.dec_work != -5]
+    df = df[df.dec_work != -4]
+    df = df[df.dec_work != -3]
+    df = df[df.dec_work != -2]
+    df = df[df.dec_work != -1]
+    # recode
+    # good thing = -1
+    # don't mind = 0
+    # bad thing = 1
+    df['dec_work'] = df['dec_work'].replace([1], -1)
+    df['dec_work'] = df['dec_work'].replace([2], 0)
+    df['dec_work'] = df['dec_work'].replace([3], 1)
+    return df
+
+
+# progressive vs. conservative score
+# negative is progressive, positive is conservative
+# values between -1 and 1, multiplied by 100 for better readability
+def prog_cons_score(df):
+    df = marry_outdated(df)
+    df = duty_children(df)
+    df = imp_marry_child(df)
+    df = child_suffers(df)
+    df = wom_hom_child(df)
+    df = female(df)
+    df = imp_work(df)
+    score_list = list()
+    for index, row in df.iterrows():
+        score = 0
+        score = score + row['marry_outdated']
+        score = score + row['duty_children']
+        # score = score + row['imp_marry_chores']
+        score = score + row['imp_marry_child']
+        score = score + row['child_suffers']
+        score = score + row['wom_hom_child']
+        if row['female'] == 1:
+            score = score - row['imp_work']
+            # score = score - row['dec_work']
+        else:
+            score = score + row['imp_work']
+            # score = score + row['dec_work']
+        score = score * 100 / 6
+        # print(str(score))
+        score_list.append(score)
+    df['prog_cons_score'] = score_list
+    df = assign_prog_con(df)
+    return df
+
+
+# how many children (for fulfillment score)
+def children(df):
+    df['children'] = df['X011']
+    # remove missing
+    df = df[df.children != -5]
+    df = df[df.children != -4]
+    df = df[df.children != -3]
+    df = df[df.children != -2]
+    df = df[df.children != -1]
+    return df
+
+
+# work (for fulfillment score)
+# 1 = full time
+# 2 = part-time
+# 3 = Unemployed
+# 4 = housewife
+def work(df):
+    df['work'] = df['X028']
+    # remove missing
+    df = df[df.work != -5]
+    df = df[df.work != -4]
+    df = df[df.work != -3]
+    df = df[df.work != -2]
+    df = df[df.work != -1]
+    # remove retired, student & other
+    df = df[df.work != 4]
+    df = df[df.work != 6]
+    df = df[df.work != 8]
+    # recode
+    # 1 = full time & self-employed
+    # 2 = part-time
+    # 3 = Unemployed
+    # 4 = housewife
+    df['work'] = df['work'].replace([3], 1)
+    df['work'] = df['work'].replace([7], 3)
+    df['work'] = df['work'].replace([5], 4)
+    return df
+
+
+# employment status of partner (for fulfillment score)
+# 1 = full time
+# 2 = part-time
+# 3 = Unemployed
+# 4 = housewife
+def work_partner(df):
+    df['work_partner'] = df['W003']
+    # remove missing
+    df = df[df.work_partner != -5]
+    df = df[df.work_partner != -4]
+    df = df[df.work_partner != -3]
+    df = df[df.work_partner != -2]
+    df = df[df.work_partner != -1]
+    # remove retired, student, disabled & other
+    df = df[df.work_partner != 5]
+    df = df[df.work_partner != 7]
+    df = df[df.work_partner != 9]
+    df = df[df.work_partner != 10]
+    # recode
+    # self-employed = 1
+    # military service = 1
+    # unemployed = 3
+    # housewife = 4
+    df['work_partner'] = df['work_partner'].replace([3, 4], 1)
+    df['work_partner'] = df['work_partner'].replace([8], 3)
+    df['work_partner'] = df['work_partner'].replace([6], 4)
+    return df
+
+
+# marital status (for fulfillment score)
+# 1 = married
+# 2 = previously married
+# 3 = never married
+def married(df):
+    df['married'] = df['X007']
+    # remove missing
+    df = df[df.married != -5]
+    df = df[df.married != -4]
+    df = df[df.married != -3]
+    df = df[df.married != -2]
+    df = df[df.married != -1]
+    # recode
+    # living together as married = 1
+    # divorced = 2
+    # separated = 2
+    # widowed = 2
+    # single/never married = 3
+    df['married'] = df['married'].replace([2], 1)
+    df['married'] = df['married'].replace([3, 4, 5], 2)
+    df['married'] = df['married'].replace([6], 3)
+    return df
+
+
+# living together with partner
+# -3 = not applicable (married)
+# 0 = no
+# 1 = yes
+def living_with_partner(df):
+    df['living_with_partner'] = df['X007_02']
+    # remove missing
+    df = df[df.living_with_partner != -5]
+    df = df[df.living_with_partner != -4]
+    # df = df[df.living_with_partner != -3]
+    df = df[df.living_with_partner != -2]
+    df = df[df.living_with_partner != -1]
+    return df
+
+
+# living in a stable relationship
+# -3 = not applicable (married or living together)
+# 0 = no
+# 1 = yes
+def stable_relationship(df):
+    df['stable_relationship'] = df['X004']
+    # remove missing
+    df = df[df.stable_relationship != -5]
+    df = df[df.stable_relationship != -4]
+    # df = df[df.stable_relationship != -3]
+    df = df[df.stable_relationship != -2]
+    df = df[df.stable_relationship != -1]
+    return df
+
+
+# score about fulfillment of gender-roles
+# -100 = fulfilling most progressive role
+# 100 = fulfilling most conservative role
+def fulfillment_score(df):
+    df = children(df)
+    df = married(df)
+    df = living_with_partner(df)
+    df = stable_relationship(df)
+    df = work(df)
+    df = work_partner(df)
+    df = dec_work(df)
+    score_list = list()
+    for index, row in df.iterrows():
+        score = 0
+        score_counter = 0
+
+        # no. of children
+        # 0 - 1 = -1
+        # 2 - 3 = 0
+        # >3 = 1
+        if row['children'] < 2:
+            score = score - 1
+            score_counter = score_counter + 1
+        elif 2 <= row['children'] < 4:
+            score = score + 0
+            score_counter = score_counter + 1
+        elif row['children'] > 4:
+            score = score + 1
+            score_counter = score_counter + 1
+
+        # if children: under which conditions
+        # 1 if married
+        # 0.5 if living with partner
+        # -0.5 if in stable relationship
+        # - 1 if not in stable relationship
+        if row['children'] > 0:
+            if row['married'] == 1:
+                score = score + 1
+                score_counter = score_counter + 1
+            elif row['living_with_partner'] == 1:
+                score = score + 0.5
+                score_counter = score_counter + 1
+            elif row['stable_relationship'] == 1:
+                score = score - 0.5
+                score_counter = score_counter + 1
+            else:
+                score = score - 1
+                score_counter = score_counter + 1
+
+        # child suffers if mother works
+        if row['children'] > 0:
+            if row['female'] == 1:
+                if row['work'] == 1:
+                    score = score - 1
+                    score_counter = score_counter + 1
+                elif row['work'] == 2:
+                    score = score - 0.5
+                    score_counter = score_counter + 1
+                elif row['work'] == 3:
+                    score = score + 0.5
+                    score_counter = score_counter + 1
+                elif row['work'] == 4:
+                    score = score + 1
+                    score_counter = score_counter + 1
+            else:
+                if row['work_partner'] == 1:
+                    score = score - 1
+                    score_counter = score_counter + 1
+                elif row['work_partner'] == 2:
+                    score = score - 0.5
+                    score_counter = score_counter + 1
+                elif row['work_partner'] == 3:
+                    score = score + 0.5
+                    score_counter = score_counter + 1
+                elif row['work_partner'] == 4:
+                    score = score + 1
+                    score_counter = score_counter + 1
+
+        # married
+        if row['married'] == 1:
+            score = score + 1
+            score_counter = score_counter + 1
+        elif row['married'] == 2:
+            score_counter = score_counter + 1
+        elif row['married'] == 3:
+            score = score - 1
+            score_counter = score_counter + 1
+
+        # children important for marriage
+        if row['married'] < 3:
+            if row['children'] < 2:
+                score = score - 1
+                score_counter = score_counter + 1
+            elif 2 <= row['children'] < 4:
+                score_counter = score_counter + 1
+            elif row['children'] > 4:
+                score = score + 1
+                score_counter = score_counter + 1
+
+        # work
+        if row['female'] == 1:
+            if row['work'] == 1:
+                score = score - 1
+                score_counter = score_counter + 1
+            elif row['work'] == 2:
+                score = score - 0.5
+                score_counter = score_counter + 1
+            elif row['work'] == 3:
+                score = score + 0.5
+                score_counter = score_counter + 1
+            elif row['work'] == 4:
+                score = score + 1
+                score_counter = score_counter + 1
+        else:
+            if row['work'] == 1:
+                score = score + 1
+                score_counter = score_counter + 1
+            elif row['work'] == 2:
+                score = score + 0.5
+                score_counter = score_counter + 1
+            elif row['work'] == 3:
+                score = score - 0.5
+                score_counter = score_counter + 1
+            elif row['work'] == 4:
+                score = score - 1
+                score_counter = score_counter + 1
+
+        # could imagine working less
+        # conservative for women
+        # progressive for men
+        if row['work'] < 3:
+            if row['female'] == 1:
+                score = score + (-1 * row['dec_work'])
+                score_counter = score_counter + 1
+            else:
+                score = score + row['dec_work']
+                score_counter = score_counter + 1
+
+        score = score * 100 / score_counter
+        score_list.append(score)
+    df['fulfillment_score'] = score_list
+    return df
+
+
+# measure of fulfillment of self-perceived gender-role
+# difference of prog_cons_score and fulfillment_score
+# 0 = perfect fulfillment of self-perceived role
+def fulfillment(df):
+    ful_list = list()
+    for index, row in df.iterrows():
+        val = (row['prog_cons_score'] - row['fulfillment_score'])
+        ful_list.append(val)
+    df['fulfillment'] = ful_list
+    return df
+
+
+# absolute value of fulfillment
+def fulfillment_abs(df):
+    df['fulfillment_abs'] = abs(df['fulfillment'])
+    return df
+
+
+# z-standardization of fulfillment
+def fulfillment_z(df):
+    df['fulfillment_z'] = (df['fulfillment'] - df['fulfillment'].mean()) / df['fulfillment'].std()
+    return df
+
+
+# absolute value of z-standardization of fulfillment
+def fulfillment_z_abs(df):
+    df['fulfillment_z_abs'] = abs(df['fulfillment_z'])
+    return df
+
+
+# men make better political leaders than women do
+# 0 = strongly disagree
+# 3 = disagree
+# 6 = agree
+# 9 = strongly agree
+def men_better_leaders(df):
+    # remove missing
+    df['men_better_leaders'] = df['D059']
+    df = df[df.men_better_leaders != -5]
+    df = df[df.men_better_leaders != -4]
+    df = df[df.men_better_leaders != -3]
+    df = df[df.men_better_leaders != -2]
+    df = df[df.men_better_leaders != -1]
+    # recode
+    # 0 = strongly disagree
+    # 3 = disagree
+    # 6 = agree
+    # 9 = strongly agree
+    df['men_better_leaders'] = df['men_better_leaders'].replace([4], 0)
+    df['men_better_leaders'] = df['men_better_leaders'].replace([2], 6)
+    df['men_better_leaders'] = df['men_better_leaders'].replace([1], 9)
+    return df
+
+
+# men make better business executives than women do
+# 0 = strongly disagree
+# 3 = disagree
+# 6 = agree
+# 9 = strongly agree
+def men_better_executives(df):
+    # remove missing
+    df['men_better_executives'] = df['D078']
+    df = df[df.men_better_executives != -5]
+    df = df[df.men_better_executives != -4]
+    df = df[df.men_better_executives != -3]
+    df = df[df.men_better_executives != -2]
+    df = df[df.men_better_executives != -1]
+    # recode
+    # 0 = strongly disagree
+    # 3 = disagree
+    # 6 = agree
+    # 9 = strongly agree
+    df['men_better_executives'] = df['men_better_executives'].replace([4], 0)
+    df['men_better_executives'] = df['men_better_executives'].replace([2], 6)
+    df['men_better_executives'] = df['men_better_executives'].replace([1], 9)
+    return df
+
+
+# university is more important for a boy than for a girl
+# 0 = strongly disagree
+# 3 = disagree
+# 6 = agree
+# 9 = strongly agree
+def university_important(df):
+    # remove missing
+    df['university_important'] = df['D060']
+    df = df[df.university_important != -5]
+    df = df[df.university_important != -4]
+    df = df[df.university_important != -3]
+    df = df[df.university_important != -2]
+    df = df[df.university_important != -1]
+    # recode
+    # 0 = strongly disagree
+    # 3 = disagree
+    # 6 = agree
+    # 9 = strongly agree
+    df['university_important'] = df['university_important'].replace([4], 0)
+    df['university_important'] = df['university_important'].replace([2], 6)
+    df['university_important'] = df['university_important'].replace([1], 9)
+    return df
+
+
+# democracy: women have the same rights as men
+# 0 = an essential characteristic of democracy
+# 9 = it's against democracy
+def dem_same_rights(df):
+    # remove missing
+    df['dem_same_rights'] = df['E233']
+    df = df[df.dem_same_rights != -5]
+    df = df[df.dem_same_rights != -4]
+    df = df[df.dem_same_rights != -3]
+    df = df[df.dem_same_rights != -2]
+    df = df[df.dem_same_rights != -1]
+    # recode
+    # 0 = an essential characteristic of democracy
+    # 9 = it's against democracy
+    df['dem_same_rights'] = df['dem_same_rights'].replace([0], 1)
+    i = 10
+    while i > 0:
+        df['dem_same_rights'] = df['dem_same_rights'].replace([i], i * -1)
+        i = i - 1
+    i = 10
+    while i > 0:
+        df['dem_same_rights'] = df['dem_same_rights'].replace([-1 * i], i - 1)
+        i = i - 1
+    return df
+
+
+# justifiable: abortion
+# 0 = always justifiable
+# 9 = never justifiable
+def justifiable_abortion(df):
+    # remove missing
+    df['justifiable_abortion'] = df['F120']
+    df = df[df.justifiable_abortion != -5]
+    df = df[df.justifiable_abortion != -4]
+    df = df[df.justifiable_abortion != -3]
+    df = df[df.justifiable_abortion != -2]
+    df = df[df.justifiable_abortion != -1]
+    # recode
+    # 0 = always justifiable
+    # 9 = never justifiable
+    df['justifiable_abortion'] = df['justifiable_abortion'].replace([0], 1)
+    i = 10
+    while i > 0:
+        df['justifiable_abortion'] = df['justifiable_abortion'].replace([i], i * -1)
+        i = i - 1
+    i = 10
+    while i > 0:
+        df['justifiable_abortion'] = df['justifiable_abortion'].replace([-1 * i], i - 1)
+        i = i - 1
+    return df
+
+
+# sexism score
+# 0 = least sexist
+# 9 = most sexist
+def sexism(df):
+    df = men_better_leaders(df)
+    df = men_better_executives(df)
+    df = university_important(df)
+    df = dem_same_rights(df)
+    df['sexism'] = (df['men_better_leaders'] +
+                    df['men_better_executives'] +
+                    df['university_important'] +
+                    df['dem_same_rights']) / 4
+    return df
