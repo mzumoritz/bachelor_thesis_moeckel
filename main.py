@@ -28,5 +28,8 @@ if __name__ == '__main__':
     m4 = reg.regression(df, 'sys_jus', ['fulfillment', 'C(social_class)', 'sexism'])
     print(m4.summary())
 
+    print(df['fulfillment_score_counter'].describe())
+    plt.hist(df['fulfillment_score_counter'])
+    plt.show()
 
     # graph.multiple_models_coefplot([m1], ['m1'])

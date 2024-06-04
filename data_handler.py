@@ -277,19 +277,19 @@ def sys_jus_z_abs(df):
 def assign_prog_con(df):
     pc_list = list()
     for index, row in df.iterrows():
-        if row['prog_cons_score'] <= -75:
+        if row['prog_cons_score'] <= -0.75:
             pc_list.append('very progressive')
-        elif -50 >= row['prog_cons_score'] > -75:
+        elif -0.50 >= row['prog_cons_score'] > -0.75:
             pc_list.append('progressive')
-        elif -25 >= row['prog_cons_score'] > -50:
+        elif -0.25 >= row['prog_cons_score'] > -0.50:
             pc_list.append('slightly progressive')
-        elif -25 < row['prog_cons_score'] < 25:
+        elif -0.25 < row['prog_cons_score'] < 0.25:
             pc_list.append('moderate')
-        elif 25 <= row['prog_cons_score'] < 50:
+        elif 0.25 <= row['prog_cons_score'] < 0.50:
             pc_list.append('slightly conservative')
-        elif 50 <= row['prog_cons_score'] < 75:
+        elif 0.50 <= row['prog_cons_score'] < 0.75:
             pc_list.append('conservative')
-        elif row['prog_cons_score'] >= 75:
+        elif row['prog_cons_score'] >= 0.75:
             pc_list.append('very conservative')
         else:
             print(row['prog_cons_score'])
@@ -480,6 +480,30 @@ def dec_work(df):
     return df
 
 
+# university is more important for a boy than for a girl for prog_cons_score
+# -1 = strongly disagree
+# -0.5 = disagree
+# 0.5 = agree
+# 1 = strongly agree
+def university_important_prog_cons(df):
+    # remove missing
+    df['university_important_prog_cons'] = df['D060']
+    df = df[df.university_important_prog_cons != -5]
+    df = df[df.university_important_prog_cons != -4]
+    df = df[df.university_important_prog_cons != -3]
+    df = df[df.university_important_prog_cons != -2]
+    df = df[df.university_important_prog_cons != -1]
+    # recode
+    # -1 = strongly disagree
+    # -0.5 = disagree
+    # 0.5 = agree
+    # 1 = strongly agree
+    df['university_important_prog_cons'] = df['university_important_prog_cons'].replace([4], 0)
+    df['university_important_prog_cons'] = df['university_important_prog_cons'].replace([2], 0.5)
+    df['university_important_prog_cons'] = df['university_important_prog_cons'].replace([3], -0.5)
+    return df
+
+
 # progressive vs. conservative score
 # negative is progressive, positive is conservative
 # values between -1 and 1, multiplied by 100 for better readability
@@ -491,22 +515,23 @@ def prog_cons_score(df):
     df = wom_hom_child(df)
     df = female(df)
     df = imp_work(df)
+    df = university_important_prog_cons(df)
     score_list = list()
     for index, row in df.iterrows():
         score = 0
         score = score + row['marry_outdated']
         score = score + row['duty_children']
-        # score = score + row['imp_marry_chores']
         score = score + row['imp_marry_child']
         score = score + row['child_suffers']
         score = score + row['wom_hom_child']
+        score = score + row['university_important_prog_cons']
         if row['female'] == 1:
             score = score - row['imp_work']
             # score = score - row['dec_work']
         else:
             score = score + row['imp_work']
             # score = score + row['dec_work']
-        score = score * 100 / 6
+        score = score / 7
         # print(str(score))
         score_list.append(score)
     df['prog_cons_score'] = score_list
@@ -531,6 +556,7 @@ def children(df):
 # 2 = part-time
 # 3 = Unemployed
 # 4 = housewife
+# 5 = others
 def work(df):
     df['work'] = df['X028']
     # remove missing
@@ -540,17 +566,20 @@ def work(df):
     df = df[df.work != -2]
     df = df[df.work != -1]
     # remove retired, student & other
-    df = df[df.work != 4]
-    df = df[df.work != 6]
-    df = df[df.work != 8]
+    # df = df[df.work != 4]
+    # df = df[df.work != 6]
+    # df = df[df.work != 8]
     # recode
     # 1 = full time & self-employed
     # 2 = part-time
     # 3 = Unemployed
     # 4 = housewife
+    # 5 = others (retired, student, etc.)
     df['work'] = df['work'].replace([3], 1)
     df['work'] = df['work'].replace([7], 3)
-    df['work'] = df['work'].replace([5], 4)
+    df['work'] = df['work'].replace([5], 10)
+    df['work'] = df['work'].replace([4, 6, 8], 5)
+    df['work'] = df['work'].replace([10], 4)
     return df
 
 
@@ -559,6 +588,7 @@ def work(df):
 # 2 = part-time
 # 3 = Unemployed
 # 4 = housewife
+# 5 = others
 def work_partner(df):
     df['work_partner'] = df['W003']
     # remove missing
@@ -568,10 +598,10 @@ def work_partner(df):
     df = df[df.work_partner != -2]
     df = df[df.work_partner != -1]
     # remove retired, student, disabled & other
-    df = df[df.work_partner != 5]
-    df = df[df.work_partner != 7]
-    df = df[df.work_partner != 9]
-    df = df[df.work_partner != 10]
+    # df = df[df.work_partner != 5]
+    # df = df[df.work_partner != 7]
+    # df = df[df.work_partner != 9]
+    # df = df[df.work_partner != 10]
     # recode
     # self-employed = 1
     # military service = 1
@@ -580,6 +610,7 @@ def work_partner(df):
     df['work_partner'] = df['work_partner'].replace([3, 4], 1)
     df['work_partner'] = df['work_partner'].replace([8], 3)
     df['work_partner'] = df['work_partner'].replace([6], 4)
+    df['work_partner'] = df['work_partner'].replace([7, 9, 10], 5)
     return df
 
 
@@ -637,6 +668,46 @@ def stable_relationship(df):
     return df
 
 
+# educational level of respondent
+# 1 Inadequately completed elementary education
+# 2 Completed (compulsory) elementary education
+# 3 Incomplete secondary school: technical/vocational type
+# 4 Complete secondary school: technical/vocational type/secondary
+# 5 Incomplete secondary: university-preparatory type/secondary,
+# 6 Complete secondary: university-preparatory type/full secondary
+# 7 Some university without degree/higher education - lower-level tertiary
+# 8 University with degree/higher education - upper-level tertiary
+def education(df):
+    df['education'] = df['X025']
+    # remove missing
+    df = df[df.education != -5]
+    df = df[df.education != -4]
+    df = df[df.education != -3]
+    df = df[df.education != -2]
+    df = df[df.education != -1]
+    return df
+
+
+# educational level of spouse
+# 1 Inadequately completed elementary education
+# 2 Completed (compulsory) elementary education
+# 3 Incomplete secondary school: technical/vocational type
+# 4 Complete secondary school: technical/vocational type/secondary
+# 5 Incomplete secondary: university-preparatory type/secondary,
+# 6 Complete secondary: university-preparatory type/full secondary
+# 7 Some university without degree/higher education - lower-level tertiary
+# 8 University with degree/higher education - upper-level tertiary
+def edu_spouse(df):
+    df['edu_spouse'] = df['W002E']
+    # remove missing
+    df = df[df.edu_spouse != -5]
+    df = df[df.edu_spouse != -4]
+    # df = df[df.stable_relationship != -3]
+    df = df[df.edu_spouse != -2]
+    df = df[df.edu_spouse != -1]
+    return df
+
+
 # score about fulfillment of gender-roles
 # -100 = fulfilling most progressive role
 # 100 = fulfilling most conservative role
@@ -648,22 +719,21 @@ def fulfillment_score(df):
     df = work(df)
     df = work_partner(df)
     df = dec_work(df)
+    df = education(df)
+    df = edu_spouse(df)
     score_list = list()
+    score_counter_list = list()
     for index, row in df.iterrows():
         score = 0
         score_counter = 0
 
         # no. of children
-        # 0 - 1 = -1
-        # 2 - 3 = 0
-        # >3 = 1
-        if row['children'] < 2:
-            score = score - 1
+        # if number of children <= 5: score = -1 + 2*(number of children / 5)
+        # else score = 1
+        if row['children'] <= 5:
+            score = score + (- 1 + 2*(row['children']/5))
             score_counter = score_counter + 1
-        elif 2 <= row['children'] < 4:
-            score = score + 0
-            score_counter = score_counter + 1
-        elif row['children'] > 4:
+        else:
             score = score + 1
             score_counter = score_counter + 1
 
@@ -687,6 +757,9 @@ def fulfillment_score(df):
                 score_counter = score_counter + 1
 
         # child suffers if mother works
+        # if children
+        # if female more conservative if less work
+        # if male more conservative if partner less work
         if row['children'] > 0:
             if row['female'] == 1:
                 if row['work'] == 1:
@@ -701,6 +774,8 @@ def fulfillment_score(df):
                 elif row['work'] == 4:
                     score = score + 1
                     score_counter = score_counter + 1
+                else:
+                    score_counter = score_counter + 1
             else:
                 if row['work_partner'] == 1:
                     score = score - 1
@@ -714,8 +789,13 @@ def fulfillment_score(df):
                 elif row['work_partner'] == 4:
                     score = score + 1
                     score_counter = score_counter + 1
+                else:
+                    score_counter = score_counter + 1
 
         # married
+        # yes = 1
+        # previously = 0
+        # never = -1
         if row['married'] == 1:
             score = score + 1
             score_counter = score_counter + 1
@@ -726,17 +806,19 @@ def fulfillment_score(df):
             score_counter = score_counter + 1
 
         # children important for marriage
+        # if number of children <= 5: score = -1 + 2*(number of children / 5)
+        # else score = 1
         if row['married'] < 3:
-            if row['children'] < 2:
-                score = score - 1
+            if row['children'] <= 5:
+                score = score + (- 1 + 2 * (row['children'] / 5))
                 score_counter = score_counter + 1
-            elif 2 <= row['children'] < 4:
-                score_counter = score_counter + 1
-            elif row['children'] > 4:
+            else:
                 score = score + 1
                 score_counter = score_counter + 1
 
         # work
+        # if female: more work = more progressive
+        # if male: more work = more conservative
         if row['female'] == 1:
             if row['work'] == 1:
                 score = score - 1
@@ -749,6 +831,8 @@ def fulfillment_score(df):
                 score_counter = score_counter + 1
             elif row['work'] == 4:
                 score = score + 1
+                score_counter = score_counter + 1
+            else:
                 score_counter = score_counter + 1
         else:
             if row['work'] == 1:
@@ -763,6 +847,8 @@ def fulfillment_score(df):
             elif row['work'] == 4:
                 score = score - 1
                 score_counter = score_counter + 1
+            else:
+                score_counter = score_counter + 1
 
         # could imagine working less
         # conservative for women
@@ -775,9 +861,34 @@ def fulfillment_score(df):
                 score = score + row['dec_work']
                 score_counter = score_counter + 1
 
-        score = score * 100 / score_counter
+        # if in relationship: difference in education level
+        # women more progressive, if higher education than spouse
+        # men more conservative, if higher education than spouse
+        if row['stable_relationship'] == 1 or row['stable_relationship'] == -3:
+            education_difference = row['education'] - row['edu_spouse']
+            if education_difference == 0:
+                score_counter = score_counter + 1
+            if row['female'] == 1:
+                score = score + (education_difference/7)
+                score_counter = score_counter + 1
+            else:
+                score = score - (education_difference/7)
+
+        # education level:
+        # higher more progressive for women
+        # lower more progressive for men
+        if row['female'] == 1:
+            score = score + (1 - 2 * (-1 + row['education']) / 7)
+            score_counter = score_counter + 1
+        else:
+            score = score + (-1 + 2 * (-1 + row['education']) / 7)
+            score_counter = score_counter + 1
+
+        score = score  / score_counter
         score_list.append(score)
+        score_counter_list.append(score_counter)
     df['fulfillment_score'] = score_list
+    df['fulfillment_score_counter'] = score_counter_list
     return df
 
 
@@ -785,11 +896,7 @@ def fulfillment_score(df):
 # difference of prog_cons_score and fulfillment_score
 # 0 = perfect fulfillment of self-perceived role
 def fulfillment(df):
-    ful_list = list()
-    for index, row in df.iterrows():
-        val = (row['prog_cons_score'] - row['fulfillment_score'])
-        ful_list.append(val)
-    df['fulfillment'] = ful_list
+    df['fulfillment'] = (df['prog_cons_score'] - df['fulfillment_score'])
     return df
 
 
