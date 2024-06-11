@@ -13,6 +13,7 @@ if __name__ == '__main__':
     print(m1.summary())
 
     graph.scatter(df, 'fulfillment', 'sys_jus')
+    graph.scatter(df, 'fulfillment', 'sys_jus', color_col='former_socialist_country', color_col_vals=[0, 1])
     graph.scatter(df[df['prog_cons_score'] >= -250], 'fulfillment', 'sys_jus', color_col='prog_con',
                   color_col_vals=['very progressive',
                                   'very conservative'])
@@ -25,11 +26,25 @@ if __name__ == '__main__':
                                         'satisfaction', 'sexism', 'C(social_class)'])
     print(m3.summary())
 
-    m4 = reg.regression(df, 'sys_jus', ['fulfillment', 'C(social_class)', 'sexism'])
+    m4 = reg.regression(df, 'sys_jus', ['fulfillment', 'sexism'])
     print(m4.summary())
 
-    print(df['fulfillment_score_counter'].describe())
-    plt.hist(df['fulfillment_score_counter'])
-    plt.show()
+    m5 = reg.regression(df, 'sys_jus', ['sexism'])
+    print(m5.summary())
+
+    m6 = reg.regression(df, 'sexism', ['fulfillment'])
+    print(m6.summary())
+
+    m7 = reg.regression(df, 'sys_jus', ['fulfillment', 'sexism', 'C(former_socialist_country)', 'age',
+                                        'C(social_class)',
+                                        'C(female)', 'satisfaction'])
+    print(m7.summary())
+
+    m8 = reg.regression(df, 'sys_jus', ['C(interview_conducted)'])
+    print(m8.summary())
+
+    # print(df['former_socialist_country'].describe())
+    # plt.hist(df['former_socialist_country'])
+    # plt.show()
 
     # graph.multiple_models_coefplot([m1], ['m1'])

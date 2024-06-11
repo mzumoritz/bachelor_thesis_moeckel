@@ -25,6 +25,39 @@ def prepare_data():
 def confounders(df):
     df = satisfaction(df)
     df = social_class(df)
+    df = former_socialist_country(df)
+    return df
+
+
+# does participant live in former socialist country
+def former_socialist_country(df):
+    socialist_country_list = ['AL', 'AM', 'BA', 'BG', 'BY', 'CZ', 'EE', 'GE', 'HR', 'HU', 'RS-KM', 'LT', 'LV', 'MD',
+                              'ME', 'MK', 'PL', 'RS', 'RO', 'RU', 'SI', 'SK', 'UA']
+    df['interview_conducted'] = df['S009']
+    # remove missing
+    df = df[df.interview_conducted != -5]
+    df = df[df.interview_conducted != -4]
+    df = df[df.interview_conducted != -3]
+    df = df[df.interview_conducted != -2]
+    df = df[df.interview_conducted != -1]
+    df = df[df.X002_02A != -5]
+    df = df[df.X002_02A != -4]
+    df = df[df.X002_02A != -3]
+    df = df[df.X002_02A != -2]
+    df = df[df.X002_02A != -1]
+    val_list = list()
+    for index, row in df.iterrows():
+        if row['interview_conducted'] in socialist_country_list:
+            val_list.append(1)
+        # for germany check if east germany (were born)
+        elif row['interview_conducted'] == 'DE':
+            if row['X002_02A'] == 278:
+                val_list.append(1)
+            else:
+                val_list.append(0)
+        else:
+            val_list.append(0)
+    df['former_socialist_country'] = val_list
     return df
 
 
@@ -319,7 +352,7 @@ def age(df):
     df = df[df.age != -3]
     df = df[df.age != -2]
     df = df[df.age != -1]
-    # remove age <= 18
+    # remove age < 18
     df = df[df.age >= 18]
     return df
 
@@ -709,8 +742,8 @@ def edu_spouse(df):
 
 
 # score about fulfillment of gender-roles
-# -100 = fulfilling most progressive role
-# 100 = fulfilling most conservative role
+# -1 = fulfilling most progressive role
+# 1 = fulfilling most conservative role
 def fulfillment_score(df):
     df = children(df)
     df = married(df)
@@ -731,7 +764,7 @@ def fulfillment_score(df):
         # if number of children <= 5: score = -1 + 2*(number of children / 5)
         # else score = 1
         if row['children'] <= 5:
-            score = score + (- 1 + 2*(row['children']/5))
+            score = score + (- 1 + 2 * (row['children'] / 5))
             score_counter = score_counter + 1
         else:
             score = score + 1
@@ -866,13 +899,12 @@ def fulfillment_score(df):
         # men more conservative, if higher education than spouse
         if row['stable_relationship'] == 1 or row['stable_relationship'] == -3:
             education_difference = row['education'] - row['edu_spouse']
-            if education_difference == 0:
-                score_counter = score_counter + 1
             if row['female'] == 1:
-                score = score + (education_difference/7)
+                score = score + (education_difference / 7)
                 score_counter = score_counter + 1
             else:
-                score = score - (education_difference/7)
+                score = score - (education_difference / 7)
+                score_counter = score_counter + 1
 
         # education level:
         # higher more progressive for women
@@ -884,7 +916,7 @@ def fulfillment_score(df):
             score = score + (-1 + 2 * (-1 + row['education']) / 7)
             score_counter = score_counter + 1
 
-        score = score  / score_counter
+        score = score / score_counter
         score_list.append(score)
         score_counter_list.append(score_counter)
     df['fulfillment_score'] = score_list
@@ -1016,29 +1048,24 @@ def dem_same_rights(df):
     return df
 
 
-# justifiable: abortion
-# 0 = always justifiable
-# 9 = never justifiable
-def justifiable_abortion(df):
+# important for successful marriage: sharing household chores
+# 0 = very important
+# 9 = not very important
+def imp_marry_chores(df):
     # remove missing
-    df['justifiable_abortion'] = df['F120']
-    df = df[df.justifiable_abortion != -5]
-    df = df[df.justifiable_abortion != -4]
-    df = df[df.justifiable_abortion != -3]
-    df = df[df.justifiable_abortion != -2]
-    df = df[df.justifiable_abortion != -1]
+    df['imp_marry_chores'] = df['D037']
+    df = df[df.imp_marry_chores != -5]
+    df = df[df.imp_marry_chores != -4]
+    df = df[df.imp_marry_chores != -3]
+    df = df[df.imp_marry_chores != -2]
+    df = df[df.imp_marry_chores != -1]
     # recode
-    # 0 = always justifiable
-    # 9 = never justifiable
-    df['justifiable_abortion'] = df['justifiable_abortion'].replace([0], 1)
-    i = 10
-    while i > 0:
-        df['justifiable_abortion'] = df['justifiable_abortion'].replace([i], i * -1)
-        i = i - 1
-    i = 10
-    while i > 0:
-        df['justifiable_abortion'] = df['justifiable_abortion'].replace([-1 * i], i - 1)
-        i = i - 1
+    # 0 = very important
+    # 4.5 = rather important
+    # 9 = not very important
+    df['imp_marry_chores'] = df['imp_marry_chores'].replace([1], 0)
+    df['imp_marry_chores'] = df['imp_marry_chores'].replace([2], 4.5)
+    df['imp_marry_chores'] = df['imp_marry_chores'].replace([3], 9)
     return df
 
 
@@ -1048,10 +1075,10 @@ def justifiable_abortion(df):
 def sexism(df):
     df = men_better_leaders(df)
     df = men_better_executives(df)
-    df = university_important(df)
     df = dem_same_rights(df)
+    df = imp_marry_chores(df)
     df['sexism'] = (df['men_better_leaders'] +
                     df['men_better_executives'] +
-                    df['university_important'] +
+                    df['imp_marry_chores'] +
                     df['dem_same_rights']) / 4
     return df
