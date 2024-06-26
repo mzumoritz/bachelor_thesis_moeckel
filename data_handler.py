@@ -23,9 +23,28 @@ def prepare_data():
 
 # preparation of potential confounding variables
 def confounders(df):
-    df = satisfaction(df)
+    # df = satisfaction(df)
     df = social_class(df)
     df = former_socialist_country(df)
+    return df
+
+
+# remove non-democratic countries
+def remove_non_democratic(df):
+    df = df[df.interview_conducted != 'AL']
+    df = df[df.interview_conducted != 'AM']
+    df = df[df.S003 != 31]
+    df = df[df.interview_conducted != 'BY']
+    df = df[df.interview_conducted != 'BA']
+    df = df[df.interview_conducted != 'GE']
+    df = df[df.interview_conducted != 'ME']
+    df = df[df.interview_conducted != 'MK']
+    df = df[df.interview_conducted != 'RU']
+    df = df[df.interview_conducted != 'UA']
+    df = df[df.interview_conducted != 'TR']
+    df = df[df.interview_conducted != 'CY-TCC']
+    df = df[df.interview_conducted != 'RS-KM']
+    df = df[df.interview_conducted != 'MD']
     return df
 
 
@@ -58,6 +77,7 @@ def former_socialist_country(df):
         else:
             val_list.append(0)
     df['former_socialist_country'] = val_list
+    df = remove_non_democratic(df)
     return df
 
 
@@ -172,9 +192,9 @@ def duty_work(df):
 
 
 # social class
-# 1 = upper class
-# 2 = middle class
-# 3 = lower class
+# upper class
+# middle class
+# lower class
 def social_class(df):
     df['social_class'] = df['X036C']
     # remove missing
@@ -184,13 +204,13 @@ def social_class(df):
     df = df[df.social_class != -2]
     df = df[df.social_class != -1]
     # recode
-    # 1 = upper class: higher controllers (1), self-employed with employees (5), self-employed farmer (11)
-    # 2 = middle class: lower controllers (2), routine non manual (3), lower sales-service (4),
-    # self employed with no employees (6), manual supervisors (7), skilled worker (8)
-    # 3 = lower class: unemployed (-3), unskilled worker (9), farm labor (10)
-    df['social_class'] = df['social_class'].replace([1, 5, 11], 1)
-    df['social_class'] = df['social_class'].replace([2, 3, 4, 6, 7, 8], 2)
-    df['social_class'] = df['social_class'].replace([-3, 9, 10], 3)
+    # upper class: higher controllers (1), self-employed with employees (5), self-employed farmer (11)
+    # middle class: lower controllers (2), routine non manual (3), lower sales-service (4),
+    #   self employed with no employees (6), manual supervisors (7), skilled worker (8)
+    # lower class: unemployed (-3), unskilled worker (9), farm labor (10)
+    df['social_class'] = df['social_class'].replace([1, 5, 11], 'upper class')
+    df['social_class'] = df['social_class'].replace([2, 3, 4, 6, 7, 8], 'middle class')
+    df['social_class'] = df['social_class'].replace([-3, 9, 10], 'lower class')
     return df
 
 
@@ -738,6 +758,22 @@ def edu_spouse(df):
     # df = df[df.stable_relationship != -3]
     df = df[df.edu_spouse != -2]
     df = df[df.edu_spouse != -1]
+    return df
+
+
+def marital_domain(df):
+    return df
+
+
+def parental_domain(df):
+    return df
+
+
+def employment_domain(df):
+    return df
+
+
+def educational_domain(df):
     return df
 
 

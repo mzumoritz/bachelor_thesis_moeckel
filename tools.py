@@ -37,3 +37,11 @@ def search_r_squared(df):
 def delete_double(to_check):
     clean_list = list(dict.fromkeys(to_check))
     return clean_list
+
+
+# function to save description of certain variables to csv
+def save_description(df, cols, filename):
+    filename = filename + '.csv'
+    df[cols].describe(include='all').round(4).to_csv(filename, sep=';')
+
+
