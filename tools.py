@@ -1,4 +1,3 @@
-import regression as reg
 
 
 # function to print rows with certain keywords
@@ -22,24 +21,7 @@ def print_conditions(df, keyword_dict):
     print('rows found: ' + str(count))
 
 
-def search_r_squared(df):
-    for head in list(df):
-        try:
-            m = reg.regression(df, head, ['fulfillment'])
-            if m.rsquared > 0.05:
-                print(head)
-                print(m.rsquared)
-                print('_________________________________')
-        except:
-            print(head + ' oopsie')
-
-
-def delete_double(to_check):
-    clean_list = list(dict.fromkeys(to_check))
-    return clean_list
-
-
-# function to save description of certain variables to csv
+# saves description of certain variables to csv
 def save_description(df, cols, filename):
     filename = filename + '.csv'
     df[cols].describe(include='all').round(4).to_csv(filename, sep=';')

@@ -1,8 +1,10 @@
 import statsmodels.formula.api as smf
-import numpy as np
 
 
 # general regression function
+# input: DataFrame containing, variables, dependent & independent variables
+# optional: intercept = False if intercept is not wanted
+# returns OLS-regression model
 def regression(df, dependent_var, independent_var_list, intercept=True):
     reg_str = dependent_var + ' ~ '
     i = 1
@@ -18,5 +20,5 @@ def regression(df, dependent_var, independent_var_list, intercept=True):
     try:
         model = smf.ols(formula=reg_str, data=df).fit()
     except:
-        print('big oof')
+        print('Error when running regression')
     return model

@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import tools as tool
-from matplotlib.lines import Line2D
 from stargazer.stargazer import Stargazer, LineLocation
 import scipy.stats as stats
 
 
+# plots a simple scatterplot
+# different categories can be marked if the corresponding variable name and the categories to be marked are passed
 def scatter(df, var_x, var_y, color_col='', color_col_vals=[]):
     df_list = list()
     color_list = ['blue', 'red', 'green', 'orange', 'yellow', 'purple', 'pink']
@@ -31,88 +30,7 @@ def scatter(df, var_x, var_y, color_col='', color_col_vals=[]):
         plt.show()
 
 
-def multiple_models_coefplot(models, modelnames, filename='multiple_coef.png', title='', remove_intercept=False,
-                             remove_coeffs=[]):
-    plt.style.use("ggplot")
-    coef_df = pd.DataFrame()
-    for i, mod in enumerate(models):
-        err_series = mod.params - mod.conf_int()[0]
-        coef_df = pd.concat([coef_df, pd.DataFrame({'coef': mod.params.values,
-                                                    'err': err_series.values,
-                                                    'varname': err_series.index.values,
-                                                    'model': modelnames[i]
-                                                    })], axis=0
-                            )
-    if remove_intercept:
-        coef_df = coef_df[coef_df.varname != 'Intercept']
-    if len(remove_coeffs) > 0:
-        for coeff in remove_coeffs:
-            coef_df = coef_df[coef_df.varname != coeff]
-    print(coef_df.to_string())
-    marker_pool = 'sodpP*H'
-    marker_list = list()
-    for i, m in enumerate(modelnames):
-        marker_list.append(marker_pool[i])
-    width = 0.25
-    base_y = np.arange(len(tool.delete_double(coef_df['varname'])))
-    base_y = base_y[::-1]
-    # print(base_y)
-    # base_y = np.arange(6) - 0.2
-    y_labels = list()
-    for val in tool.delete_double(coef_df['varname']):
-        y_labels.append(val)
-    y_labels.append('')
-    y_labels.reverse()
-    # print(y_labels)
-
-    fig, ax = plt.subplots(figsize=(10, len(err_series) + len(err_series) / 2))
-    # fig, ax = plt.subplots(figsize=(10, 25))
-    mod_list = list(enumerate(coef_df.model.unique()))
-    mod_list.reverse()
-    # print(mod_list)
-    for el in mod_list:
-        i = el[0]
-        mod = el[1]
-        # print(i)
-        # print(mod)
-        mod_df = coef_df[coef_df.model == mod]
-        mod_df = mod_df.set_index('varname').reindex(coef_df['varname'].unique())
-        # print(mod_df)
-        ## offset y posistions
-        Y = base_y - width * i
-        ax.barh(Y, mod_df['coef'],
-                color='none', xerr=mod_df['err'])
-        ## remove axis labels
-        ax.set_ylabel('')
-        ax.set_xlabel('')
-        ax.scatter(x=mod_df['coef'],
-                   marker=marker_list[i], s=120,
-                   y=Y, color='black')
-        ax.axvline(x=0, linestyle='--', color='black', linewidth=4)
-        ax.yaxis.set_ticks_position('none')
-        _ = ax.set_yticklabels(y_labels,
-                               rotation=0, fontsize=16)
-        # _ = ax.set_xticklabels(np.arange(-1, 1, 0.25),
-        #                        rotation=0, fontsize=16)
-
-    ## finally, build customized legend
-    legend_elements = [Line2D([0], [0], marker=m,
-                              label=modelnames[i],
-                              color='k',
-                              markersize=10)
-                       for i, m in enumerate(marker_list)
-                       ]
-    _ = ax.legend(handles=legend_elements, loc=2,
-                  prop={'size': 15}, labelspacing=1.2)
-    plt.grid(axis='x', color='black')
-    plt.title(title, fontsize=16)
-    plt.xticks(fontsize=16)
-    plt.savefig(filename, bbox_inches='tight', dpi=300)
-    plt.show()
-    fig.clf()
-    plt.close()
-
-
+# creates an HTML-table with regression result of the models passed
 def create_html_table(models,
                       filename,
                       title='',
@@ -152,6 +70,7 @@ def create_html_table(models,
     return stargazer
 
 
+# creates a scatter plot featuring a fitted regression line
 def scatter_fit(df, xtitle, ytitle, r_sq, intercept, coef, title=''):
     x = df[xtitle]
     y = df[ytitle]
@@ -181,9 +100,9 @@ def scatter_fit(df, xtitle, ytitle, r_sq, intercept, coef, title=''):
             horizontalalignment='left')
     plot_ci_manual(t, s_err, n, x, xseq, y2, ax=ax)
     pi = t * s_err * np.sqrt(1 + 1 / n + (xseq - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2))
-    ax.fill_between(xseq, y2 + pi, y2 - pi, color="None", linestyle="--")
-    ax.plot(xseq, y2 - pi, "--", color='orange', label='95% Prediction Limits')
-    ax.plot(xseq, y2 + pi, "--", color='orange')
+    ax.fill_between(xseq, y2 + pi, y2 - pi, color='None', linestyle='--')
+    ax.plot(xseq, y2 - pi, '--', color='orange', label='95% Prediction Limits')
+    ax.plot(xseq, y2 + pi, '--', color='orange')
     # fig.tight_layout()
     ax.set_xlabel(xtitle, fontsize=16)
     ax.set_ylabel(ytitle, fontsize=16)
@@ -194,17 +113,18 @@ def scatter_fit(df, xtitle, ytitle, r_sq, intercept, coef, title=''):
     anyArtist = plt.Line2D((0, 1), (0, 0), color='mistyrose', lw=5)
     legend = plt.legend(
         [handle for i, handle in enumerate(handles) if i in display] + [anyArtist],
-        [label for i, label in enumerate(labels) if i in display] + ["95% Confidence Limits"],
-        loc=9, bbox_to_anchor=(0, -0.21, 1., 0.102), ncol=3, mode="expand", fontsize=16
+        [label for i, label in enumerate(labels) if i in display] + ['95% Confidence Limits'],
+        loc=9, bbox_to_anchor=(0, -0.21, 1., 0.102), ncol=3, mode='expand', fontsize=16
     )
-    frame = legend.get_frame().set_edgecolor("0.5")
+    legend.get_frame().set_edgecolor('0.5')
     plt.grid()
     plt.tight_layout()
-    plt.savefig("filename.png", bbox_extra_artists=(legend,), bbox_inches="tight")
+    plt.savefig('filename.png', bbox_extra_artists=(legend,), bbox_inches='tight')
     plt.show()
 
 
-# https://stackoverflow.com/questions/27164114/show-confidence-limits-and-prediction-limits-in-scatter-plot
+# necessary for scatter_fit
+# plots confidence intervals
 def plot_ci_manual(t, s_err, n, x, x2, y2, ax=None):
     if ax is None:
         ax = plt.gca()
@@ -215,5 +135,7 @@ def plot_ci_manual(t, s_err, n, x, x2, y2, ax=None):
     return ax
 
 
+# necessary for scatter_fit
+# returns a numpy-equation
 def equation(a, b):
     return np.polyval(a, b)

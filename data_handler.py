@@ -1,35 +1,34 @@
 import pandas as pd
-import numpy as np
 
 
 # load data in dataframe and prepare it
+# data file must be located in same directory as this file
+# returns DataFrame
 def prepare_data():
     df = pd.read_stata('evs_trend.dta', convert_categoricals=False)
     df = evs_2017(df)
-    df = age(df)
     df = confounders(df)
+    df = remove_non_democratic(df)
     df = sys_jus(df)
     df = prog_cons_score(df)
     df = fulfillment_score(df)
     df = fulfillment(df)
-    df = fulfillment_abs(df)
-    df = fulfillment_z(df)
-    df = fulfillment_z_abs(df)
     df = sexism(df)
-    df = sys_jus_z(df)
-    df = sys_jus_z_abs(df)
     return df
 
 
 # preparation of potential confounding variables
+# returns DataFrame including confounders
 def confounders(df):
-    # df = satisfaction(df)
     df = social_class(df)
     df = former_socialist_country(df)
+    df = age(df)
+    df = female(df)
     return df
 
 
 # remove non-democratic countries
+# returns DataFrame with participants from non-democratic countries removed
 def remove_non_democratic(df):
     df = df[df.interview_conducted != 'AL']
     df = df[df.interview_conducted != 'AM']
@@ -49,6 +48,9 @@ def remove_non_democratic(df):
 
 
 # does participant live in former socialist country
+# returns DataFrame with dummy-coded variable
+# 0 = not from former socialist country
+# 1 = from former socialist country
 def former_socialist_country(df):
     socialist_country_list = ['AL', 'AM', 'BA', 'BG', 'BY', 'CZ', 'EE', 'GE', 'HR', 'HU', 'RS-KM', 'LT', 'LV', 'MD',
                               'ME', 'MK', 'PL', 'RS', 'RO', 'RU', 'SI', 'SK', 'UA']
@@ -77,17 +79,18 @@ def former_socialist_country(df):
         else:
             val_list.append(0)
     df['former_socialist_country'] = val_list
-    df = remove_non_democratic(df)
     return df
 
 
+# returns DataFrame which only contains the EVS 2017
 def evs_2017(df):
     # only evs 2017
     df = df[df.s002vs == 7]
     return df
 
 
-# economy vs. environment
+# position on economy vs. environment for sys_jus
+# returns DataFrame including variable econ_env
 def econ_env(df):
     # create variable economy vs environment econ_env
     df['econ_env'] = df['B008']
@@ -106,7 +109,8 @@ def econ_env(df):
     return df
 
 
-# income inequality
+# position on income inequality for sys_jus
+# returns Dataframe including variable inc_eneq
 def inc_ineq(df):
     df['inc_ineq'] = df['E035']
     # remove missing
@@ -130,7 +134,8 @@ def inc_ineq(df):
     return df
 
 
-# how important to have [respondent's] ancestry
+# position on how important it is to have [respondent's] ancestry for sys_jus
+# returns DataFrame including variable imp_ancestry
 def imp_ancestry(df):
     df['imp_ancestry'] = df['G035']
     # remove missing
@@ -149,7 +154,8 @@ def imp_ancestry(df):
     return df
 
 
-# how important to respect [respondent's] country's political institutions and laws
+# position on how important it is to respect [respondent's] country's political institutions and laws for sys_jus
+# returns DataFrame including variable respect_inst_laws
 def respect_inst_laws(df):
     df['respect_inst_laws'] = df['G034']
     # remove missing
@@ -168,7 +174,8 @@ def respect_inst_laws(df):
     return df
 
 
-# work is a duty towards society
+# position on statement 'work is a duty towards society' for sys_jus
+# returns DataFrame including variable duty_work
 def duty_work(df):
     df['duty_work'] = df['C039']
     # remove missing
@@ -191,16 +198,13 @@ def duty_work(df):
     return df
 
 
-# social class
-# upper class
-# middle class
-# lower class
+# social class variable (possible confounder)
+# returns DataFrame including variable social class
 def social_class(df):
     df['social_class'] = df['X036C']
     # remove missing
     df = df[df.social_class != -5]
     df = df[df.social_class != -4]
-    # df = df[df.social_class != -3]
     df = df[df.social_class != -2]
     df = df[df.social_class != -1]
     # recode
@@ -214,9 +218,10 @@ def social_class(df):
     return df
 
 
-# positioning on left right scale
+# positioning on left right scale for sys_jus
 # 0 = left
 # 9 = right
+# returns DataFrame including variable left_right
 def left_right(df):
     df['left_right'] = df['E033']
     # remove missing
@@ -233,7 +238,8 @@ def left_right(df):
     return df
 
 
-# people who don't work turn lazy
+# position on statement 'people who don't work turn lazy' for sys_jus
+# returns DataFrame including variable no_work_lazy
 def no_work_lazy(df):
     df['no_work_lazy'] = df['C038']
     # remove missing
@@ -256,7 +262,8 @@ def no_work_lazy(df):
     return df
 
 
-# when jobs are scarce, men have more right to a job than women
+# position on statement 'when jobs are scarce, men have more right to a job than women'
+# returns DataFrame including variable men_right_job
 def men_right_job(df):
     df['men_right_job'] = df['C001_01']
     # remove missing
@@ -279,7 +286,9 @@ def men_right_job(df):
     return df
 
 
-# system justification
+# system justification variable
+# calls all functions to create necessary variables
+# returns DataFrame including variable sys_jus
 def sys_jus(df):
     df = econ_env(df)
     df = inc_ineq(df)
@@ -300,25 +309,6 @@ def sys_jus(df):
     return df
 
 
-# deviation from mean sys_jus
-def sys_jus_dev(df):
-    mean_sys_jus = df['sys_jus'].mean()
-    df['sys_jus_dev'] = -1 * (mean_sys_jus - df['sys_jus'])
-    return df
-
-
-# z-standardization of sys_jus
-def sys_jus_z(df):
-    df['sys_jus_z'] = (df['sys_jus'] - df['sys_jus'].mean()) / df['sys_jus'].std()
-    return df
-
-
-# absolute value of z-standardized system jsutification value
-def sys_jus_z_abs(df):
-    df['sys_jus_z_abs'] = abs(df['sys_jus_z'])
-    return df
-
-
 # assign progressive/conservative category
 # very progressive (score <= -75)
 # progressive ( -50 <= score < -75)
@@ -327,6 +317,7 @@ def sys_jus_z_abs(df):
 # slightly conservative (25 <= score < 50)
 # conservative (50 <= score < 75)
 # very conservative (score >= 75)
+# returns DataFrame including variable prog_con
 def assign_prog_con(df):
     pc_list = list()
     for index, row in df.iterrows():
@@ -351,19 +342,9 @@ def assign_prog_con(df):
     return df
 
 
-# satisfaction with life
-def satisfaction(df):
-    df['satisfaction'] = df['A170']
-    # remove missing
-    df = df[df.satisfaction != -5]
-    df = df[df.satisfaction != -4]
-    df = df[df.satisfaction != -3]
-    df = df[df.satisfaction != -2]
-    df = df[df.satisfaction != -1]
-    return df
-
-
+# variable depicting age of respondent
 # keep only if 18 or older
+# returns DataFrame including variable age
 def age(df):
     df['age'] = df['X003']
     # remove missing
@@ -377,7 +358,8 @@ def age(df):
     return df
 
 
-# women want home and child
+# position on statement 'women want home and child' for prog_cons_score
+# returns DataFrame including variable wom_hom_child
 def wom_hom_child(df):
     df['wom_hom_child'] = df['D062']
     # remove missing
@@ -397,7 +379,9 @@ def wom_hom_child(df):
     return df
 
 
-# female
+# variable depicting respondents gender
+# dummy-coded with female = 1
+# returns DataFrame including variable female
 def female(df):
     df['female'] = df['X001']
     # remove missing
@@ -414,7 +398,8 @@ def female(df):
     return df
 
 
-# pre-school child suffers from working mother
+# position on statement 'pre-school child suffers from working mother' for prog_cons_score
+# returns DataFrame including variable child_suffers
 def child_suffers(df):
     df['child_suffers'] = df['D061']
     # remove missing
@@ -434,7 +419,8 @@ def child_suffers(df):
     return df
 
 
-# it is a duty towards society to have children
+# position on statement 'it is a duty towards society to have children' for prog_cons_score
+# returns DataFrame including variable duty_children
 def duty_children(df):
     df['duty_children'] = df['D026_03']
     # remove missing
@@ -456,7 +442,8 @@ def duty_children(df):
     return df
 
 
-# marriage is an outdated institution
+# position on statement 'marriage is an outdated institution' for prog_cons_score
+# returns DataFrame including variable marry_outdated
 def marry_outdated(df):
     df['marry_outdated'] = df['D022']
     # remove missing
@@ -476,7 +463,8 @@ def marry_outdated(df):
     return df
 
 
-# importance of children for marriage
+# importance of children for marriage for prog_cons_score
+# returns DataFrame including variable imp_marry_child
 def imp_marry_child(df):
     df['imp_marry_child'] = df['D038']
     # remove missing
@@ -494,7 +482,8 @@ def imp_marry_child(df):
     return df
 
 
-# how important is work in life
+# how important is work in life for prog_cons_score
+# returns DataFrame including variable imp_work
 def imp_work(df):
     df['imp_work'] = df['A005']
     # remove missing
@@ -514,7 +503,8 @@ def imp_work(df):
     return df
 
 
-# decrease of importance placed on work in life
+# decrease of importance placed on work in life for prog_cons_score
+# returns DataFrame including variable dec_work
 def dec_work(df):
     df['dec_work'] = df['E015']
     # remove missing
@@ -538,6 +528,7 @@ def dec_work(df):
 # -0.5 = disagree
 # 0.5 = agree
 # 1 = strongly agree
+# returns DataFrame including variable university_important_prog_cons
 def university_important_prog_cons(df):
     # remove missing
     df['university_important_prog_cons'] = df['D060']
@@ -559,14 +550,14 @@ def university_important_prog_cons(df):
 
 # progressive vs. conservative score
 # negative is progressive, positive is conservative
-# values between -1 and 1, multiplied by 100 for better readability
+# values between -1 and 1
+# returns DataFrame including variable prog_cons_score
 def prog_cons_score(df):
     df = marry_outdated(df)
     df = duty_children(df)
     df = imp_marry_child(df)
     df = child_suffers(df)
     df = wom_hom_child(df)
-    df = female(df)
     df = imp_work(df)
     df = university_important_prog_cons(df)
     score_list = list()
@@ -592,7 +583,8 @@ def prog_cons_score(df):
     return df
 
 
-# how many children (for fulfillment score)
+# how many children for fulfillment_score
+# returns DataFrame including variable children
 def children(df):
     df['children'] = df['X011']
     # remove missing
@@ -604,12 +596,13 @@ def children(df):
     return df
 
 
-# work (for fulfillment score)
+# employment status for fulfillment_score
 # 1 = full time
 # 2 = part-time
 # 3 = Unemployed
 # 4 = housewife
 # 5 = others
+# returns DataFrame including variable work
 def work(df):
     df['work'] = df['X028']
     # remove missing
@@ -636,12 +629,13 @@ def work(df):
     return df
 
 
-# employment status of partner (for fulfillment score)
+# employment status of partner for fulfillment_score
 # 1 = full time
 # 2 = part-time
 # 3 = Unemployed
 # 4 = housewife
 # 5 = others
+# returns DataFrame including variable work_partner
 def work_partner(df):
     df['work_partner'] = df['W003']
     # remove missing
@@ -667,10 +661,11 @@ def work_partner(df):
     return df
 
 
-# marital status (for fulfillment score)
+# marital status for fulfillment_score
 # 1 = married
 # 2 = previously married
 # 3 = never married
+# returns DataFrame including variable married
 def married(df):
     df['married'] = df['X007']
     # remove missing
@@ -691,10 +686,11 @@ def married(df):
     return df
 
 
-# living together with partner
+# living together with partner for fulfillment_score
 # -3 = not applicable (married)
 # 0 = no
 # 1 = yes
+# returns DataFrame including variable living_with_partner
 def living_with_partner(df):
     df['living_with_partner'] = df['X007_02']
     # remove missing
@@ -706,10 +702,11 @@ def living_with_partner(df):
     return df
 
 
-# living in a stable relationship
+# living in a stable relationship for fulfillment_score
 # -3 = not applicable (married or living together)
 # 0 = no
 # 1 = yes
+# returns DataFrame including variable stable_relationship
 def stable_relationship(df):
     df['stable_relationship'] = df['X004']
     # remove missing
@@ -721,7 +718,7 @@ def stable_relationship(df):
     return df
 
 
-# educational level of respondent
+# educational level of respondent for fulfillment_score
 # 1 Inadequately completed elementary education
 # 2 Completed (compulsory) elementary education
 # 3 Incomplete secondary school: technical/vocational type
@@ -730,6 +727,7 @@ def stable_relationship(df):
 # 6 Complete secondary: university-preparatory type/full secondary
 # 7 Some university without degree/higher education - lower-level tertiary
 # 8 University with degree/higher education - upper-level tertiary
+# returns DataFrame including variable education
 def education(df):
     df['education'] = df['X025']
     # remove missing
@@ -741,7 +739,7 @@ def education(df):
     return df
 
 
-# educational level of spouse
+# educational level of spouse for fulfillment_score
 # 1 Inadequately completed elementary education
 # 2 Completed (compulsory) elementary education
 # 3 Incomplete secondary school: technical/vocational type
@@ -750,6 +748,7 @@ def education(df):
 # 6 Complete secondary: university-preparatory type/full secondary
 # 7 Some university without degree/higher education - lower-level tertiary
 # 8 University with degree/higher education - upper-level tertiary
+# returns DataFrame including variable edu_spouse
 def edu_spouse(df):
     df['edu_spouse'] = df['W002E']
     # remove missing
@@ -761,25 +760,10 @@ def edu_spouse(df):
     return df
 
 
-def marital_domain(df):
-    return df
-
-
-def parental_domain(df):
-    return df
-
-
-def employment_domain(df):
-    return df
-
-
-def educational_domain(df):
-    return df
-
-
 # score about fulfillment of gender-roles
 # -1 = fulfilling most progressive role
 # 1 = fulfilling most conservative role
+# returns DataFrame including variable fulfillment_score
 def fulfillment_score(df):
     df = children(df)
     df = married(df)
