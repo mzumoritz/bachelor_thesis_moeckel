@@ -1,26 +1,36 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from statsmodels.iolib.summary2 import summary_col
-from stargazer.stargazer import Stargazer, LineLocation
-from IPython.core.display import HTML
+#!/usr/bin/env python
+
+"""\
+Main file to run the code necessary for the bachelor thesis of Moritz Möckel
+
+The dataset must be located in the file path, as the files of this script
+It can be downloaded here: https://search.gesis.org/research_data/ZA7503?doi=10.4232/1.14021
+
+packages required:
+pandas
+matplotlib
+stargazer
+scipy
+statsmodels
+"""
 
 import data_handler as data
 import regression as reg
 import tools as tool
 import graphs as graph
 
+__author__ = 'Moritz Möckel'
+__email__ = 'mmoecke2@smail.uni-koeln.de'
+__status__ = 'finished'
+__date__ = '10.07.2024'
+
 if __name__ == '__main__':
+    # prepare dataset
     df = data.prepare_data()
 
+    # create regression models
     m1 = reg.regression(df, 'sys_jus', ['fulfillment'])
     print(m1.summary())
-
-    # graph.scatter(df, 'fulfillment', 'sys_jus')
-    # graph.scatter(df, 'fulfillment', 'sys_jus', color_col='former_socialist_country', color_col_vals=[0, 1])
-    # graph.scatter(df[df['prog_cons_score'] >= -250], 'fulfillment', 'sys_jus', color_col='prog_con',
-    #               color_col_vals=['very progressive',
-    #                               'very conservative'])
 
     m2 = reg.regression(df, 'sys_jus', ['sexism'])
     print(m2.summary())
@@ -50,16 +60,12 @@ if __name__ == '__main__':
                                         'C(female, Treatment(reference=0))'])
     print(m9.summary())
 
+    # save univariate description of variables to csv-file
     tool.save_description(df, ['sys_jus', 'fulfillment', 'sexism'], 'uni_main')
     tool.save_description(df, ['former_socialist_country', 'age', 'social_class',
                                'female'], 'uni_cov')
 
-    main_output = summary_col([m1, m2, m3, m4], stars=True,
-                              model_names=['m1\nsys_jus', 'm2\nsys_jus', 'm3\nsexism', 'm4\nsys_jus'])
-    main_output.tables[0].to_csv("main_output.csv", sep=';', encoding='utf-8-sig')
-    print(main_output)
-
-    stargazer = Stargazer([m1, m2, m3, m4])
+    # save regression outputs
     graph.create_html_table([m1, m2, m3, m4],
                             'main_output.html',
                             custom_columns=['m1', 'm2', 'm3', 'm4'],
@@ -67,12 +73,6 @@ if __name__ == '__main__':
                             covariate_order=['Intercept', 'fulfillment', 'sexism'],
                             custom_notes=['Standard errors in parentheses.'],
                             dep_var_list=['sys_jus', 'sys_jus', 'sexism', 'sys_jus'])
-
-    cov_output = summary_col([m5, m6, m7, m8, m9], stars=True,
-                             model_names=['m5\nsys_jus', 'm6\nsys_jus', 'm7\nsys_jus', 'm8\nsys_jus',
-                                          'm9\nsys_jus'])
-    cov_output.tables[0].to_csv("cov_output.csv", sep=';', encoding='utf-8-sig')
-    print(cov_output)
 
     graph.create_html_table([m5, m6, m7, m8, m9],
                             'cov_output.html',
@@ -92,36 +92,7 @@ if __name__ == '__main__':
                                                'upper class',
                                                'C(female, Treatment(reference=0))[T.1]': 'female'})
 
+    # create scatterplot with regression line
     graph.scatter_fit(df, 'fulfillment', 'sys_jus', r_sq=m1.rsquared, intercept=m1.params[0],
                       coef=m1.params[1])
 
-    # graph.multiple_models_coefplot([m1, m4], ['m1', 'm4'], remove_intercept=True)
-
-    # print((df['education'] - df['edu_spouse']).describe())
-    # plt.hist(df['education'] - df['edu_spouse'])
-    # plt.show()
-
-    print(df['social_class'].describe())
-    # plt.hist(df['sys_jus'])
-    # plt.show()
-
-    x, y = np.unique(df['sys_jus'], return_counts=True)
-    # plt.scatter(x, y)
-    # plt.show()
-
-    x, y = np.unique(df['fulfillment'], return_counts=True)
-    # plt.scatter(x, y)
-    # plt.show()
-
-    x, y = np.unique(df['age'], return_counts=True)
-    # plt.scatter(x, y)
-    # plt.show()
-
-    x, y = np.unique(df['female'], return_counts=True)
-    print(x)
-    print(y)
-
-    # print(df['interview_conducted'].unique())
-    # print(df.groupby('interview_conducted')['sys_jus'].mean())
-
-    # graph.multiple_models_coefplot([m1], ['m1'])

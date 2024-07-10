@@ -1,4 +1,15 @@
+#!/usr/bin/env python
+
+"""\
+file containing the regression function
+"""
+
 import statsmodels.formula.api as smf
+
+__author__ = 'Moritz Möckel'
+__email__ = 'mmoecke2@smail.uni-koeln.de'
+__status__ = 'finished'
+__date__ = '10.07.2024'
 
 
 # general regression function

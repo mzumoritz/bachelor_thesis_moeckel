@@ -1,8 +1,18 @@
+#!/usr/bin/env python
+
+"""\
+file handling the creation of graphs and tables
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from stargazer.stargazer import Stargazer, LineLocation
 import scipy.stats as stats
 
+__author__ = 'Moritz Möckel'
+__email__ = 'mmoecke2@smail.uni-koeln.de'
+__status__ = 'finished'
+__date__ = '10.07.2024'
 
 # plots a simple scatterplot
 # different categories can be marked if the corresponding variable name and the categories to be marked are passed

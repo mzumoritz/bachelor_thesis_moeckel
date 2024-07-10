@@ -1,4 +1,15 @@
+#!/usr/bin/env python
+
+"""\
+file handling the data necessary for the project
+"""
+
 import pandas as pd
+
+__author__ = 'Moritz Möckel'
+__email__ = 'mmoecke2@smail.uni-koeln.de'
+__status__ = 'finished'
+__date__ = '10.07.2024'
 
 
 # load data in dataframe and prepare it
@@ -952,24 +963,6 @@ def fulfillment(df):
     return df
 
 
-# absolute value of fulfillment
-def fulfillment_abs(df):
-    df['fulfillment_abs'] = abs(df['fulfillment'])
-    return df
-
-
-# z-standardization of fulfillment
-def fulfillment_z(df):
-    df['fulfillment_z'] = (df['fulfillment'] - df['fulfillment'].mean()) / df['fulfillment'].std()
-    return df
-
-
-# absolute value of z-standardization of fulfillment
-def fulfillment_z_abs(df):
-    df['fulfillment_z_abs'] = abs(df['fulfillment_z'])
-    return df
-
-
 # men make better political leaders than women do
 # 0 = strongly disagree
 # 3 = disagree
@@ -1015,30 +1008,6 @@ def men_better_executives(df):
     df['men_better_executives'] = df['men_better_executives'].replace([4], 0)
     df['men_better_executives'] = df['men_better_executives'].replace([2], 6)
     df['men_better_executives'] = df['men_better_executives'].replace([1], 9)
-    return df
-
-
-# university is more important for a boy than for a girl
-# 0 = strongly disagree
-# 3 = disagree
-# 6 = agree
-# 9 = strongly agree
-def university_important(df):
-    # remove missing
-    df['university_important'] = df['D060']
-    df = df[df.university_important != -5]
-    df = df[df.university_important != -4]
-    df = df[df.university_important != -3]
-    df = df[df.university_important != -2]
-    df = df[df.university_important != -1]
-    # recode
-    # 0 = strongly disagree
-    # 3 = disagree
-    # 6 = agree
-    # 9 = strongly agree
-    df['university_important'] = df['university_important'].replace([4], 0)
-    df['university_important'] = df['university_important'].replace([2], 6)
-    df['university_important'] = df['university_important'].replace([1], 9)
     return df
 
 
