@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-"""\
-Main file to run the code necessary for the bachelor thesis of Moritz Möckel
+"""
+\
+Main file to run the code necessary for the bachelor thesis of Moritz Möckel Topic: Climate, Gender Roles & System
+Justification: How does the fulfillment of gendered role expectations influence individuals’ engagement in system
+justification?
 
 The dataset must be located in the file path, as the files of this script
 It can be downloaded here: https://search.gesis.org/research_data/ZA7503?doi=10.4232/1.14021
@@ -87,12 +90,11 @@ if __name__ == '__main__':
                             custom_notes=['Standard errors in parentheses.'],
                             rename_covariates={'former_socialist_country': 'former socialist country',
                                                'C(social_class, Treatment(reference=\'lower class\'))[T.middle class]':
-                                               'middle class',
+                                                   'middle class',
                                                'C(social_class, Treatment(reference=\'lower class\'))[T.upper class]':
-                                               'upper class',
+                                                   'upper class',
                                                'C(female, Treatment(reference=0))[T.1]': 'female'})
 
     # create scatterplot with regression line
     graph.scatter_fit(df, 'fulfillment', 'sys_jus', r_sq=m1.rsquared, intercept=m1.params[0],
                       coef=m1.params[1])
-
