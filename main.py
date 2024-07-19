@@ -15,6 +15,7 @@ matplotlib
 stargazer
 scipy
 statsmodels
+numpy
 """
 
 import data_handler as data
